@@ -14,8 +14,16 @@
 #error EMULATOR_DEF_WIDTH || EMULATOR_DEF_HEIGHT
 #endif
 
+int CONTENT_IS_CFG=0;
+
+#ifdef HAVE_LIBCO	
 cothread_t mainThread;
 cothread_t emuThread;
+#else
+int CPULOOP=1;
+extern void RetroLoop();
+extern void retro_exit_program();
+#endif
 
 int defaultw = EMULATOR_DEF_WIDTH;
 int defaulth = EMULATOR_DEF_HEIGHT;
@@ -138,6 +146,8 @@ static void retro_wrap_emulator(void)
    static char *argv[] = { "puae", RPATH };
    umain(sizeof(argv)/sizeof(*argv), argv);
 
+#ifdef HAVE_LIBCO	
+
    pauseg = -1;
 
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, 0); 
@@ -152,6 +162,7 @@ static void retro_wrap_emulator(void)
       LOGI("Running a dead emulator.");
       co_switch(mainThread);
    }
+#endif
 }
 
 void retro_init(void)
@@ -175,20 +186,27 @@ void retro_init(void)
    CROP_WIDTH    = retrow;
    CROP_HEIGHT   = (retroh - 80);
 
+#ifdef HAVE_LIBCO
    if(!emuThread && !mainThread)
    {
       mainThread = co_active();
       emuThread = co_create(65536 * sizeof(void*), retro_wrap_emulator);
    }
+#endif
+
 }
 
 void retro_deinit(void)
 {	
    UnInitOSGLU();	
-
+#ifdef HAVE_LIBCO
    if(emuThread)
       co_delete(emuThread);
    emuThread = 0;
+#else
+//terminate
+   retro_exit_program();
+#endif
 }
 
 unsigned retro_api_version(void)
@@ -302,14 +320,19 @@ void retro_run(void)
          firstpass=0;
          goto sortie;
       }
-      update_input();	
+
+      update_input();
+#ifndef HAVE_LIBCO	
+      RetroLoop();
+#endif
    }
 
 sortie:
 
    video_cb(bmp,retrow,retroh , retrow << 1);
-
+#ifdef HAVE_LIBCO	
    co_switch(emuThread);
+#endif
 }
 
 bool retro_load_game(const struct retro_game_info *info)
@@ -325,20 +348,43 @@ bool retro_load_game(const struct retro_game_info *info)
       const char *full_path = (const char*)info->path;
       strncpy(RPATH, full_path, sizeof(RPATH));
 
-      // checking parsed file for custom resolution
-      FILE * configfile;
+     //check if uae cfg 
+     if(strlen(RPATH)>3){
 
-      char filebuf[4096];
-      if((configfile = fopen (RPATH, "r")))
+	int rpsize=strlen(RPATH);
+	if( ( RPATH[rpsize-1]=='E' || RPATH[rpsize-1]=='e' ) && \
+	    ( RPATH[rpsize-2]=='A' || RPATH[rpsize-2]=='a' ) && \
+	    ( RPATH[rpsize-3]=='U' || RPATH[rpsize-3]=='u' ) && \
+	    ( RPATH[rpsize-4]=='.') ) 
 	{
-	  while(fgets(filebuf, sizeof(filebuf), configfile))
-	    {
-	      sscanf(filebuf,"gfx_width = %d",&w);
-	      sscanf(filebuf,"gfx_height = %d",&h);
-	    }
-	  fclose(configfile);
+
+		CONTENT_IS_CFG=1;
+
+		printf("uae cfg file found!\n");
+
+      		// checking parsed file for custom resolution
+      		FILE * configfile;
+
+ 		char filebuf[4096];
+      		if((configfile = fopen (RPATH, "r")))
+		{
+	  		while(fgets(filebuf, sizeof(filebuf), configfile))
+	    		{
+	      			sscanf(filebuf,"gfx_width = %d",&w);
+	      			sscanf(filebuf,"gfx_height = %d",&h);
+	    		}
+	  		fclose(configfile);
+		}
+
 	}
-    }
+        else {
+		printf("no uae cfg file found!\n");
+		CONTENT_IS_CFG=0;
+        }
+
+     } //check cfg
+
+   }
 
   if (w<=0 || h<=0 || w>EMULATOR_MAX_WIDTH || h>EMULATOR_MAX_HEIGHT) {
     w = defaultw;
@@ -353,6 +399,11 @@ bool retro_load_game(const struct retro_game_info *info)
   CROP_HEIGHT = (retroh-80);
   memset(bmp, 0, sizeof(bmp));
   Screen_SetFullUpdate();
+
+#ifndef HAVE_LIBCO
+  retro_wrap_emulator();
+#endif
+
   return true;
 }
 

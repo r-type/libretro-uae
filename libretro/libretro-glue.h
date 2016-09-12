@@ -8,11 +8,12 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#ifdef HAVE_LIBCO
 #include <libco.h>
-
+	
 extern cothread_t mainThread;
 extern cothread_t emuThread;
-
+#endif
 
 #define LOGI printf
 

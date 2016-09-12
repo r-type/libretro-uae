@@ -142,9 +142,15 @@ SOURCES_C += $(GUI)/dialog.c\
 				 $(GUI)/dlgRom.c \
 				 $(GUI)/dlgSystem.c \
 				 $(GUI)/sdlgui.c
+ifeq ($(HAVE_LIBCO), 1)
+CPPFLAGS += -DHAVE_LIBCO
+CFLAGS   += -DHAVE_LIBCO
+CXXFLAGS += -DHAVE_LIBCO
+
+SOURCES_C += $(CORE_DIR)/libco/libco.c
+endif
 
 SOURCES_C += $(LIBRETRO)/libretro.c \
-				 $(CORE_DIR)/libco/libco.c \
 				 $(LIBRETRO)/libretro-mapper.c \
 				 $(LIBRETRO)/vkbd.c \
 				 $(LIBRETRO)/graph.c \

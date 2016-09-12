@@ -20,6 +20,7 @@ TARGET_NAME := puae
 
 CORE_DIR  := .
 ROOT_DIR  := .
+HAVE_LIBCO = 0
 
 ifeq ($(platform), unix)
    CC = gcc

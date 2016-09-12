@@ -82,6 +82,10 @@ struct mmufixup mmufixup[2];
 
 extern uae_u32 get_fpsr (void);
 
+#ifndef HAVE_LIBCO
+extern int CPULOOP;
+#endif
+
 #define COUNT_INSTRS 0
 #define MC68060_PCR   0x04300000
 #define MC68EC060_PCR 0x04310000
@@ -4071,6 +4075,10 @@ static void m68k_run_1 (void)
 		regs.ipl = regs.ipl_pin;
 		if (!currprefs.cpu_compatible || (currprefs.cpu_cycle_exact && currprefs.cpu_model <= 68000))
 			return;
+
+#ifndef HAVE_LIBCO
+		if(CPULOOP==0)break;
+#endif
 	}
 }
 
@@ -4169,6 +4177,10 @@ cont:
 
 		if (!currprefs.cpu_cycle_exact || currprefs.cpu_model > 68000)
 			return;
+
+#ifndef HAVE_LIBCO
+		if(CPULOOP==0)break;
+#endif
 	}
 }
 
@@ -4231,6 +4243,10 @@ void exec_nostats (void)
 
 		if (end_block (opcode) || r->spcflags || uae_int_requested)
 			return; /* We will deal with the spcflags in the caller */
+
+#ifndef HAVE_LIBCO
+	if(CPULOOP==0)break;
+#endif
 	}
 }
 
@@ -4276,6 +4292,10 @@ void execute_normal (void)
 		}
 		/* No need to check regs.spcflags, because if they were set,
 		we'd have ended up inside that "if" */
+
+#ifndef HAVE_LIBCO
+	if(CPULOOP==0)break;
+#endif
 	}
 }
 
@@ -4294,6 +4314,10 @@ static void m68k_run_jit (void)
 				return;
 			}
 		}
+
+#ifndef HAVE_LIBCO
+	if(CPULOOP==0)break;
+#endif
 	}
 }
 #endif /* JIT */
@@ -4388,6 +4412,11 @@ retry:
 				if (do_specialties (cpu_cycles))
 					return;
 			}
+
+#ifndef HAVE_LIBCO
+	if(CPULOOP==0)break;
+#endif
+
 				}
 	} CATCH (prb) {
 
@@ -4446,6 +4475,10 @@ retry:
 				if (do_specialties (cpu_cycles))
 					return;
 			}
+
+#ifndef HAVE_LIBCO
+	if(CPULOOP==0)break;
+#endif
 		}
 	} CATCH (prb) {
 
@@ -4531,6 +4564,10 @@ insretry:
 				if (do_specialties (cpu_cycles))
 					return;
 			}
+
+#ifndef HAVE_LIBCO
+	if(CPULOOP==0)break;
+#endif
 		}
 	} CATCH (prb) {
 
@@ -4680,6 +4717,10 @@ cont:
 
 		if (exit)
 			return;
+
+#ifndef HAVE_LIBCO
+	if(CPULOOP==0)break;
+#endif
 	}
 }
 
@@ -4711,6 +4752,10 @@ static void m68k_run_2pf (void)
 			if (do_specialties (cpu_cycles))
 				return;
 		}
+
+#ifndef HAVE_LIBCO
+	if(CPULOOP==0)break;
+#endif
 	}
 }
 
@@ -4763,6 +4808,10 @@ static void m68k_run_2p (void)
 			}
 		}
 		ipl_fetch ();
+
+#ifndef HAVE_LIBCO
+	if(CPULOOP==0)break;
+#endif
 	}
 }
 
@@ -4796,6 +4845,10 @@ static void m68k_run_2 (void)
 			if (do_specialties (cpu_cycles))
 				return;
 		}
+
+#ifndef HAVE_LIBCO
+	if(CPULOOP==0)break;
+#endif
 	}
 }
 
@@ -4814,10 +4867,45 @@ static void m68k_run_mmu (void)
 			if (do_specialties (cpu_cycles))
 				return;
 		}
+
+#ifndef HAVE_LIBCO
+	if(CPULOOP==0)break;
+#endif
 	}
 }
 
 #endif /* CPUEMU_0 */
+
+#ifndef HAVE_LIBCO
+
+void RetroLoop()
+{
+	while(CPULOOP==1){
+
+	void (*run_func)(void);
+
+			run_func = currprefs.cpu_cycle_exact && currprefs.cpu_model == 68000 ? m68k_run_1_ce :
+				currprefs.cpu_compatible && currprefs.cpu_model == 68000 ? m68k_run_1 :
+#ifdef JIT
+				currprefs.cpu_model >= 68020 && currprefs.cachesize ? m68k_run_jit :
+#endif
+#ifdef MMUEMU
+				currprefs.cpu_model == 68030 && currprefs.mmu_model ? m68k_run_mmu030 :
+				currprefs.cpu_model == 68040 && currprefs.mmu_model ? m68k_run_mmu040 :
+				currprefs.cpu_model == 68060 && currprefs.mmu_model ? m68k_run_mmu060 :
+#endif
+				currprefs.cpu_model >= 68020 && currprefs.cpu_cycle_exact ? m68k_run_2ce :
+				currprefs.cpu_compatible ? (currprefs.cpu_model <= 68020 ? m68k_run_2p : m68k_run_2pf) : m68k_run_2;
+
+		run_func ();
+		unset_special (SPCFLAG_BRK | SPCFLAG_MODE_CHANGE);
+
+	}
+
+	CPULOOP=1;	
+
+}
+#endif
 
 int in_m68k_go = 0;
 
@@ -4977,6 +5065,9 @@ void m68k_go (int may_quit)
 			run_func = m68k_run_mmu;
 		} else {
 #endif
+#ifndef HAVE_LIBCO
+	return;
+#else
 			run_func = currprefs.cpu_cycle_exact && currprefs.cpu_model == 68000 ? m68k_run_1_ce :
 				currprefs.cpu_compatible && currprefs.cpu_model == 68000 ? m68k_run_1 :
 #ifdef JIT
@@ -4994,6 +5085,8 @@ void m68k_go (int may_quit)
 #endif
 		run_func ();
 		unset_special (SPCFLAG_BRK | SPCFLAG_MODE_CHANGE);
+#endif //have_libco
+
 	}
 #ifdef NATMEM_OFFSET
 	protect_roms (false);

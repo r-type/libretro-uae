@@ -123,9 +123,12 @@ void gui_poll_events(void)
    if(Ktime - LastFPSTime >= 1000/50)
    {
       frame++; 
-      LastFPSTime = Ktime;		
+      LastFPSTime = Ktime;
+#ifdef HAVE_LIBCO			
       co_switch(mainThread);
+#else
       //retro_run();
+#endif
    }
 }
 

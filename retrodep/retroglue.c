@@ -43,6 +43,8 @@ extern unsigned short int  bmp[1024*1024];
 extern short signed int SNDBUF[1024*2];
 extern int  sndbufpos;
 
+extern int CPULOOP;
+
 int pause_emulation;
 int prefs_changed = 0;
 
@@ -219,7 +221,11 @@ void retro_flush_screen (struct vidbuf_description *gfxinfo, int ystart, int yen
 {
 	if(pauseg==1)
       pause_select();
+#ifdef HAVE_LIBCO	
 	co_switch(mainThread);
+#else
+	CPULOOP=0;
+#endif
 }
 
 
