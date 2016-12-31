@@ -534,12 +534,10 @@ int input_gui(void)
       mbt[2]=0;
       MOUSEMODE=-MOUSEMODE;
    }
-
-   if(MOUSEMODE==1)
-   {
+   
       //TODO FIX THIS :(
-#if defined(PS3PORT) 
-      //Slow Joypad Mouse Emulation for PS3
+#if defined(PS3PORT) || defined (WIN32PORT)
+      //Slow Joypad Mouse Emulation for PS3 and Windows
       static int pair=-1;
       pair=-pair;
       if(pair==1)return;
@@ -547,6 +545,9 @@ int input_gui(void)
 #elif defined(WIIPORT) 
       PAS=1;
 #endif
+   if(MOUSEMODE==1)
+   {
+
 
       if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT))mouse_x += PAS;
       if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT))mouse_x -= PAS;
