@@ -49,6 +49,8 @@ int pauseg=0; //enter_gui
 int SND=1; //SOUND ON/OFF
 int NUMjoy=1;
 
+int slowdown=0;
+
 static int mbt[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 long frame=0;
@@ -122,6 +124,7 @@ void gui_poll_events(void)
 
    if(Ktime - LastFPSTime >= 1000/50)
    {
+      slowdown=0;
       frame++; 
       LastFPSTime = Ktime;
 #ifdef HAVE_LIBCO			
@@ -535,6 +538,8 @@ int input_gui(void)
       MOUSEMODE=-MOUSEMODE;
    }
 
+   if(slowdown>0)return;
+
    if(MOUSEMODE==1)
    {
       //TODO FIX THIS :(
@@ -564,6 +569,8 @@ int input_gui(void)
       mouse_l    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
       mouse_r    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
    }
+
+   slowdown=1;
 
    static int mmbL=0,mmbR=0;
 
