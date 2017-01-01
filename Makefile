@@ -20,7 +20,7 @@ TARGET_NAME := puae
 
 CORE_DIR  := .
 ROOT_DIR  := .
-HAVE_LIBCO = 1
+HAVE_LIBCO = 0
 
 ifeq ($(platform), unix)
    CC = gcc
@@ -97,29 +97,13 @@ else
 ifeq ($(subplatform), 32)
    CC = i586-mingw32msvc-gcc
 else
-   CC = i686-w64-mingw32-gcc
-STATIC_LINKING=1
-   ZLIB_DIR = retrodep/zlib/
-   CFLAGS += -fno-aggressive-loop-optimizations -I$(ZLIB_DIR) 
-   OBJECTS += sources/src/include/zlib/adler32.o \
-          sources/src/include/zlib/compress.o \
-          sources/src/include/zlib/crc32.o \
-          sources/src/include/zlib/deflate.o \
-          sources/src/include/zlib/gzclose.o \
-          sources/src/include/zlib/gzlib.o \
-          sources/src/include/zlib/gzread.o \
-          sources/src/include/zlib/gzwrite.o \
-          sources/src/include/zlib/inffast.o \
-          sources/src/include/zlib/inflate.o \
-          sources/src/include/zlib/inftrees.o \
-          sources/src/include/zlib/trees.o \
-          sources/src/include/zlib/uncompr.o \
-          sources/src/include/zlib/zutil.o
+   CC = x86_64-w64-mingw32-gcc
+   CFLAGS += -fno-aggressive-loop-optimizations
 endif
    PLATFLAGS +=  -DRETRO -DLSB_FIRST -DALIGN_DWORD -DWIN32PORT -DWIN32
    TARGET := $(TARGET_NAME)_libretro.dll
    fpic := -fPIC
-   SHARED := -shared -static -static-libgcc -s -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined 
+   SHARED := -shared -static-libgcc -s -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined 
 	LDFLAGS := -lm -lz
 endif
 
